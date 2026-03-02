@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 服务器监控报告发送脚本
-发件人: pandac00@163.com
-收件人: 19922307306@189.cn
+使用环境变量配置敏感信息:
+  export EMAIL_USER=your_email@163.com
+  export EMAIL_PASS=your_password
+  export EMAIL_TO=recipient@189.cn
 """
 
 import smtplib
@@ -11,13 +13,14 @@ from email.mime.text import MIMEText
 from email.header import Header
 import subprocess
 import datetime
+import os
 
 # ========== 邮件配置 ==========
 SMTP_SERVER = "smtp.163.com"
 SMTP_PORT = 465
-SENDER = "pandac00@163.com"
-SENDER_PASSWORD = "UMayTeWFZsFqwv6M"
-RECIPIENT = "19922307306@189.cn"
+SENDER = os.environ.get("EMAIL_USER", "")
+SENDER_PASSWORD = os.environ.get("EMAIL_PASS", "")
+RECIPIENT = os.environ.get("EMAIL_TO", "")
 
 # ========== 获取系统信息 ==========
 def run_cmd(cmd):
@@ -30,7 +33,6 @@ IP地址: {run_cmd("curl -s ipinfo.io/ip")}
 时间: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"""
 
 def get_cpu_usage():
-    # 从 /proc/stat 计算 CPU 使用率
     cpu_line = run_cmd("grep cpu /proc/stat | head -1")
     parts = cpu_line.split()
     if len(parts) >= 5:
@@ -82,6 +84,10 @@ CPU使用率: {get_cpu_usage()}
 
 # ========== 发送邮件 ==========
 def send_email(content, subject="[OpenClaw] 服务器监控报告"):
+    if not SENDER or not SENDER_PASSWORD or not RECIPIENT:
+        print("错误: 请设置环境变量 EMAIL_USER, EMAIL_PASS, EMAIL_TO")
+        return False
+    
     msg = MIMEText(content, "plain", "utf-8")
     msg["From"] = SENDER
     msg["To"] = RECIPIENT
